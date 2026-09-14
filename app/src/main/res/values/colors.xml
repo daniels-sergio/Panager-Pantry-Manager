@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Official Smart Pantry Manager palette (do not add colours outside this set) ===== -->
+    <color name="primary_red">#B80C09</color>
+    <color name="secondary_coral">#F25F5C</color>
+    <color name="accent_yellow">#FFE066</color>
+    <color name="primary_blue">#247BA0</color>
+    <color name="off_white">#F7FFF7</color>
+
+    <!-- Neutral text/background helpers derived from the palette, used for readability.
+         text_primary, text_secondary, card_background and divider invert to dark
+         equivalents in values-night/colors.xml; background_page is the page/root
+         background token (also inverts). -->
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#5C5C5C</color>
+    <color name="text_on_dark">#F7FFF7</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="background_page">#F7FFF7</color>
+
+    <!-- Fixed tokens that never change with theme: light text/icons placed on a
+         permanently brand-colored surface (headers, badges, buttons) keep using
+         off_white directly; dark text placed on the permanently-yellow accent
+         cards uses these instead of text_primary/text_secondary, so it stays
+         readable in both light and dark mode. -->
+    <color name="text_on_accent">#1A1A1A</color>
+    <color name="text_on_accent_secondary">#5C5C5C</color>
+
+    <!-- Semantic aliases so layouts read clearly (all map back to the palette above) -->
+    <color name="expiry_expired">@color/primary_red</color>
+    <color name="expiry_soon">@color/accent_yellow</color>
+    <color name="expiry_normal">@color/primary_blue</color>
+</resources>
