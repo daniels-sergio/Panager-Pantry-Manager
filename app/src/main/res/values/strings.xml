@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Panager</string>
+    <string name="app_full_name">Smart Pantry Manager</string>
+    <string name="app_tagline">Cook what you already have. Waste less.</string>
+</resources>
