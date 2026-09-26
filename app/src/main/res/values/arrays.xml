@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The full set of units a pantry ingredient can be measured in. Grouped
+         mass -> volume -> count so related units sit together in the dropdown. -->
+    <string-array name="unit_options">
+        <item>g</item>
+        <item>kg</item>
+        <item>ml</item>
+        <item>l</item>
+        <item>tsp</item>
+        <item>tbsp</item>
+        <item>cup</item>
+        <item>piece</item>
+        <item>clove</item>
+        <item>slice</item>
+        <item>pinch</item>
+        <item>sprig</item>
+        <item>bunch</item>
+        <item>can</item>
+        <item>packet</item>
+        <item>stick</item>
+        <item>whole</item>
+        <item>head</item>
+        <item>bottle</item>
+        <item>block</item>
+    </string-array>
+</resources>
