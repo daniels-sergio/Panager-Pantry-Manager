@@ -14,20 +14,33 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Unit tests for the strict recipe matching algorithm. These mirror the five
- * scenarios from the assignment brief and run on the local JVM (no Android
- * device required) since IngredientMatcher has no Android dependencies.
+ * Automatic checks for the recipe matching rule in IngredientMatcher.
+ *
+ * Each method marked @Test builds a small made-up recipe and pantry, asks
+ * IngredientMatcher whether the recipe can be made, and checks the answer.
+ * assertTrue means "this should be a yes", assertFalse means "this should be a
+ * no". If any answer is wrong, the test fails and names the method.
+ *
+ * The first five cover the scenarios from the assignment brief; the rest cover
+ * unit conversion and other edge cases. They run on a normal computer with
+ * ./gradlew testDebugUnitTest, no phone or emulator needed, because
+ * IngredientMatcher doesn't use any Android features.
  */
 public class IngredientMatcherTest {
 
+    // Shortcuts that keep the tests short and readable.
+    // required(...) makes one line of a recipe's ingredient list. The recipe ID
+    // (1) doesn't matter here because nothing is saved to a database.
     private static RecipeIngredient required(String name, double quantity, String unit) {
         return new RecipeIngredient(1, name, quantity, unit);
     }
 
+    // inPantry(...) makes one pantry item with no expiry date.
     private static PantryItem inPantry(String name, double quantity, String unit) {
         return new PantryItem(name, quantity, unit, null);
     }
 
+    // Everything the recipe needs is in the pantry, so the answer should be yes.
     @Test
     public void test1_allIngredientsPresent_recipeAppears() {
         List<RecipeIngredient> required = Arrays.asList(
@@ -43,6 +56,7 @@ public class IngredientMatcherTest {
         assertTrue(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // Two out of three ingredients isn't enough. The missing chicken should rule it out.
     @Test
     public void test2_missingIngredient_recipeDoesNotAppear() {
         List<RecipeIngredient> required = Arrays.asList(
@@ -58,6 +72,7 @@ public class IngredientMatcherTest {
         assertFalse(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // The ingredient is there, but only 2 of the 3 needed.
     @Test
     public void test3_insufficientQuantity_recipeDoesNotAppear() {
         List<RecipeIngredient> required = List.of(required("tomato", 3, "piece"));
@@ -66,6 +81,7 @@ public class IngredientMatcherTest {
         assertFalse(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // Having more than needed (5 when 3 are needed) is fine.
     @Test
     public void test4_sufficientQuantity_recipeAppears() {
         List<RecipeIngredient> required = List.of(required("tomato", 3, "piece"));
@@ -74,6 +90,7 @@ public class IngredientMatcherTest {
         assertTrue(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // "tomatoes" in the pantry should count as "tomato" in the recipe.
     @Test
     public void test5_pluralPantryEntry_matchesAfterNormalization() {
         List<RecipeIngredient> required = List.of(required("tomato", 1, "piece"));
@@ -82,6 +99,8 @@ public class IngredientMatcherTest {
         assertTrue(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // The same recipe is checked twice: no before the chicken is added,
+    // yes straight after. This is what the user sees on the Recipes screen.
     @Test
     public void addingMissingIngredientMakesRecipeEligible() {
         List<RecipeIngredient> required = Arrays.asList(
@@ -100,6 +119,7 @@ public class IngredientMatcherTest {
         assertTrue("Recipe should become suggested once enough chicken is added", IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // 1 kg is 1000 g, which covers a 500 g requirement.
     @Test
     public void unitConversion_kilogramsSatisfyGramsRequirement() {
         List<RecipeIngredient> required = List.of(required("flour", 500, "g"));
@@ -108,6 +128,7 @@ public class IngredientMatcherTest {
         assertTrue(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // 250 g is less than the 500 g needed.
     @Test
     public void unitConversion_insufficientGrams_recipeDoesNotAppear() {
         List<RecipeIngredient> required = List.of(required("flour", 500, "g"));
@@ -116,6 +137,8 @@ public class IngredientMatcherTest {
         assertFalse(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // Grams and pieces can't be compared, so 5 pieces of rice doesn't count
+    // toward 200 g of rice.
     @Test
     public void incompatibleUnits_doNotMatch() {
         List<RecipeIngredient> required = List.of(required("rice", 200, "g"));
@@ -124,6 +147,8 @@ public class IngredientMatcherTest {
         assertFalse(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // Different counted units don't mix: pieces or slices of garlic don't
+    // count toward cloves.
     @Test
     public void countUnits_doNotConvertAcrossEachOther() {
         List<RecipeIngredient> required = List.of(required("garlic", 2, "clove"));
@@ -136,6 +161,7 @@ public class IngredientMatcherTest {
                 IngredientMatcher.canMakeRecipe(required, pantryWithSlices));
     }
 
+    // Same counted unit on both sides, and enough of it.
     @Test
     public void countUnits_matchWhenIdentical() {
         List<RecipeIngredient> required = List.of(required("garlic", 2, "clove"));
@@ -144,6 +170,7 @@ public class IngredientMatcherTest {
         assertTrue(IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // "cloves" and "clove" are the same unit.
     @Test
     public void pluralCountUnitAlias_matchesSingularRequirement() {
         List<RecipeIngredient> required = List.of(required("garlic", 2, "clove"));
@@ -153,6 +180,7 @@ public class IngredientMatcherTest {
                 IngredientMatcher.canMakeRecipe(required, pantry));
     }
 
+    // Spoons and cups are converted to millilitres before comparing.
     @Test
     public void volumeConversion_teaspoonsTablespoonsAndCupsConvertToMillilitres() {
         // 1 tbsp = 15ml, 1 cup = 250ml, 1 tsp = 5ml

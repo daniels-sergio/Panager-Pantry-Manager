@@ -14,9 +14,12 @@ import com.example.smartpantrymanager.utils.SettingsManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 /**
- * Lets the user toggle "expiring soon" alerts, dark mode, and pick a
- * preferred unit system. All are persisted through SettingsManager
- * (SharedPreferences), so they survive the app being closed and reopened.
+ * The Settings screen. It has two on/off switches (expiry alerts and dark mode)
+ * and a Metric/Imperial choice.
+ *
+ * Each control is set to the saved value when the screen opens, and saves its
+ * new value the moment it's changed, so there's no Save button. The saving itself
+ * is handled by SettingsManager.
  */
 public class SettingsActivity extends AppCompatActivity {
 
@@ -29,11 +32,14 @@ public class SettingsActivity extends AppCompatActivity {
 
         settingsManager = new SettingsManager(this);
 
+        // Expiry alerts switch: show the saved value, and save any change.
         Switch expiryAlertsSwitch = findViewById(R.id.switch_expiry_alerts);
         expiryAlertsSwitch.setChecked(settingsManager.isExpiryAlertsEnabled());
         expiryAlertsSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
                 settingsManager.setExpiryAlertsEnabled(isChecked));
 
+        // Dark mode switch: save the choice, then switch the colour scheme straight
+        // away. Android redraws the open screens in the new colours.
         Switch darkModeSwitch = findViewById(R.id.switch_dark_mode);
         darkModeSwitch.setChecked(settingsManager.isDarkModeEnabled());
         darkModeSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -42,14 +48,18 @@ public class SettingsActivity extends AppCompatActivity {
                     isChecked ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
         });
 
+        // Metric / Imperial: two radio buttons in a group, so picking one
+        // automatically un-picks the other.
         RadioGroup unitGroup = findViewById(R.id.radio_group_unit);
         RadioButton metricButton = findViewById(R.id.radio_metric);
         RadioButton imperialButton = findViewById(R.id.radio_imperial);
 
+        // Tick whichever one was saved last time.
         boolean isMetric = SettingsManager.UNIT_METRIC.equals(settingsManager.getPreferredUnit());
         metricButton.setChecked(isMetric);
         imperialButton.setChecked(!isMetric);
 
+        // When the user picks one, save it.
         unitGroup.setOnCheckedChangeListener((group, checkedId) -> {
             String unit = checkedId == R.id.radio_metric ? SettingsManager.UNIT_METRIC : SettingsManager.UNIT_IMPERIAL;
             settingsManager.setPreferredUnit(unit);

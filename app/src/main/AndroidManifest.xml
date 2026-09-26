@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    The app's ID card for Android. It lists every screen, the app's name and icon,
+    and which screen opens when the icon is tapped. A screen that isn't listed
+    here can't be opened, and the app crashes if it tries.
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        android:name=".PanagerApp" makes PanagerApp run first, before any screen,
+        so it can apply dark mode and add the starter recipes.
+    -->
     <application
         android:name=".PanagerApp"
         android:allowBackup="true"
@@ -10,6 +19,11 @@
         android:theme="@style/Theme.Panager"
         android:supportsRtl="true">
 
+        <!--
+            The Home screen. The MAIN / LAUNCHER lines make it the screen that opens
+            when the app icon is tapped. exported="true" is needed so the phone's
+            home screen is allowed to open it.
+        -->
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -19,6 +33,10 @@
             </intent-filter>
         </activity>
 
+        <!--
+            The other screens. exported="false" means only this app can open them;
+            other apps on the phone can't.
+        -->
         <activity android:name=".ui.PantryActivity" android:exported="false" />
         <activity android:name=".ui.AddEditIngredientActivity" android:exported="false" />
         <activity android:name=".ui.SuggestedRecipesActivity" android:exported="false" />

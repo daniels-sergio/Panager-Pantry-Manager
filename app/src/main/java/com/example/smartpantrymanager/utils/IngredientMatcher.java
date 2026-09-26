@@ -8,24 +8,34 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Implements the app's most important business rule: a recipe is only "suggested"
- * if the pantry contains EVERY required ingredient at AT LEAST the required quantity.
- * No partial matches are ever allowed through.
+ * Decides whether a recipe can be made with what's in the pantry. This is the
+ * app's most important rule: a recipe is only suggested if the pantry has EVERY
+ * ingredient it needs, in AT LEAST the amount it needs. Having most of them isn't
+ * enough.
  *
- * Two supporting problems are solved here:
- *  1. Ingredient NAME normalization, so "Tomato", "tomatoes" and " TOMATO " are
- *     treated as the same ingredient.
- *  2. Simple UNIT conversion, so "2 kg" of flour correctly satisfies a recipe
- *     that needs "500 g" of flour.
+ * Comparing the pantry to a recipe isn't as simple as checking names match,
+ * because people write the same thing in different ways. This class deals with
+ * two of those:
+ *  1. Names. "Tomato", "tomatoes" and " TOMATO " should all count as the same
+ *     ingredient, so names are cleaned up before comparing.
+ *  2. Units. 2 kg of flour should cover a recipe that needs 500 g, so amounts
+ *     are converted to a shared unit before comparing.
+ *
+ * This code is kept separate from the screens so it can be tested on its own
+ * (see IngredientMatcherTest).
  */
 public final class IngredientMatcher {
 
+    // Only holds helper methods, so nobody needs to create one.
     private IngredientMatcher() {
     }
 
-    // A small predefined list of common aliases, mapped to one canonical name.
+    // Different names for the same ingredient, each pointing to the one name the
+    // app uses. For example, someone who types "scallion" and a recipe that says
+    // "green onion" are talking about the same thing.
     private static final Map<String, String> ALIASES = new HashMap<>();
 
+    // This block runs once, the first time the class is used, and fills the list.
     static {
         ALIASES.put("scallion", "green onion");
         ALIASES.put("spring onion", "green onion");
@@ -40,18 +50,22 @@ public final class IngredientMatcher {
     }
 
     /**
-     * Normalizes an ingredient name so simple casing, whitespace and singular/plural
-     * differences do not stop two ingredients from being recognised as the same thing.
+     * Cleans up an ingredient name so small differences in how it was typed don't
+     * stop a match. It removes spaces at either end, makes everything lower case,
+     * swaps in the standard name if there's an alias, and turns plurals into
+     * singulars.
      *
-     * Examples: "Tomato" -> "tomato", "Tomatoes" -> "tomato", " EGGS " -> "egg".
+     * Examples: "Tomato" -> "tomato", "Tomatoes" -> "tomato", " EGGS " -> "egg",
+     * "Scallion" -> "green onion".
      */
     public static String normalizeName(String rawName) {
         if (rawName == null) {
-            return "";
+            return ""; // treat a missing name as blank rather than crashing
         }
         String name = rawName.trim().toLowerCase();
 
-        // Apply a known alias first, if one exists for this exact word.
+        // Swap in the standard name if this is a known alias. This has to happen
+        // before the plural step, because the alias list uses singular names.
         if (ALIASES.containsKey(name)) {
             name = ALIASES.get(name);
         }
@@ -60,7 +74,12 @@ public final class IngredientMatcher {
         return name;
     }
 
-    /** Very small, rule-based singularizer - enough for common pantry ingredients. */
+    /**
+     * Turns a plural into a singular using a few simple English spelling rules.
+     * It isn't a full dictionary, but it covers the way common pantry ingredients
+     * are pluralised. The rules are checked in order and the first one that fits
+     * is used, so the more specific endings ("ies", "oes") come before plain "s".
+     */
     private static String singularize(String word) {
         if (word.length() < 4) {
             return word; // words this short are left as-is (e.g. "egg", "ice")
@@ -83,18 +102,28 @@ public final class IngredientMatcher {
         return word;
     }
 
-    /** The measurement "family" a unit belongs to, used to decide if two units are comparable. */
+    /**
+     * The kinds of measurement. Units in the same kind can be compared (grams and
+     * kilograms are both weight); units of different kinds can't (you can't tell
+     * whether 200 g of garlic is more or less than 3 cloves).
+     *  MASS   = weight (g, kg)
+     *  VOLUME = liquid amount (ml, l, tsp, tbsp, cup)
+     *  COUNT  = things you count (pieces, cloves, slices, cans, ...)
+     */
     private enum UnitFamily {MASS, VOLUME, COUNT, UNKNOWN}
 
     /**
-     * Normalizes a unit string and converts a quantity into a common base unit for its
-     * family (grams for mass, millilitres for volume, whole pieces for count) so that
-     * quantities in different but compatible units can be compared directly.
+     * Converts an amount into the smallest unit of its kind, so two amounts can be
+     * compared directly. Weights become grams, liquids become millilitres, and
+     * counted things stay as they are.
+     * Example: 2 kg becomes 2000 (grams).
      */
     private static double toBaseQuantity(double quantity, String rawUnit) {
         return quantity * conversionFactor(rawUnit);
     }
 
+    // How many of the smallest unit fit into one of this unit.
+    // For example, 1 kg is 1000 g, so the number for "kg" is 1000.
     private static double conversionFactor(String rawUnit) {
         switch (normalizeUnit(rawUnit)) {
             case "kg":
@@ -113,12 +142,13 @@ public final class IngredientMatcher {
     }
 
     /**
-     * Normalizes a unit string to one canonical form. Mass (g/kg) and volume
-     * (ml/l/tsp/tbsp/cup) units convert to a common base via conversionFactor().
-     * Count-style units (piece, clove, slice, ...) are NOT interchangeable with
-     * each other - a genuinely unrecognized unit is returned as-is (trimmed and
-     * lowercased) rather than collapsed into "piece", so it only ever matches
-     * an identical unrecognized string.
+     * Turns the many ways of writing a unit into one standard spelling, so
+     * "grams", "gram" and "g" are all treated as "g".
+     *
+     * Counted units are kept separate from each other: a clove is not a piece,
+     * and a slice is not a can. A unit this method doesn't recognise is returned
+     * as typed (tidied up), so it only matches the exact same unit.
+     * A missing unit is treated as "piece".
      */
     private static String normalizeUnit(String rawUnit) {
         if (rawUnit == null) {
@@ -204,6 +234,8 @@ public final class IngredientMatcher {
         }
     }
 
+    // Works out which kind of measurement a unit is. Anything that isn't weight or
+    // liquid counts as a counted unit.
     private static UnitFamily familyOf(String rawUnit) {
         String unit = normalizeUnit(rawUnit);
         if (unit.equals("g") || unit.equals("kg")) {
@@ -216,20 +248,30 @@ public final class IngredientMatcher {
     }
 
     /**
-     * Checks whether the pantry, as a whole, holds enough of one required ingredient.
-     * Pantry entries whose normalized name matches are summed together (a user might
-     * have two separate pantry rows for the same ingredient); only pantry entries whose
-     * unit is in the same family (mass/volume/count) as the required unit are counted.
+     * Checks whether the pantry has enough of ONE ingredient a recipe needs.
+     *
+     * The user might have the same ingredient saved more than once (say, two bags
+     * of flour added on different days), so every matching pantry entry is added
+     * up. A pantry entry only counts if:
+     *  - its cleaned-up name matches the recipe's, and
+     *  - its unit is the same kind (weight, liquid or count), and
+     *  - for counted units, it's the exact same unit (cloves only count toward
+     *    cloves).
+     *
+     * Example: the recipe needs 500 g flour and the pantry has 300 g and 0.5 kg.
+     * That's 300 + 500 = 800 g, which is enough.
      */
     private static boolean pantryHasEnough(RecipeIngredient required, List<PantryItem> pantryItems) {
+        // Work out what we're looking for, with the amount in the smallest unit.
         String requiredName = normalizeName(required.getIngredientName());
         UnitFamily requiredFamily = familyOf(required.getUnit());
         double requiredBaseQuantity = toBaseQuantity(required.getRequiredQuantity(), required.getUnit());
 
+        // Running total of how much the pantry has, in the same smallest unit.
         double availableBaseQuantity = 0;
         for (PantryItem pantryItem : pantryItems) {
             if (!normalizeName(pantryItem.getIngredientName()).equals(requiredName)) {
-                continue;
+                continue; // a different ingredient, skip it
             }
             if (familyOf(pantryItem.getUnit()) != requiredFamily) {
                 continue; // incompatible units (e.g. recipe needs grams, pantry has "pieces")
@@ -241,13 +283,17 @@ public final class IngredientMatcher {
             availableBaseQuantity += toBaseQuantity(pantryItem.getQuantity(), pantryItem.getUnit());
         }
 
+        // Enough if the total is at least what the recipe asks for.
         return availableBaseQuantity >= requiredBaseQuantity;
     }
 
     /**
-     * The strict matching algorithm: a recipe can only be made if EVERY required
-     * ingredient is present in the pantry at a sufficient quantity. A single missing
-     * or insufficient ingredient disqualifies the whole recipe.
+     * The main check, used by the Home and Recipes screens. Answers "can this
+     * recipe be made with this pantry?"
+     *
+     * It goes through the recipe's ingredients one by one. The moment one is
+     * missing or short, it answers no and stops looking. It only answers yes if
+     * every ingredient passed.
      */
     public static boolean canMakeRecipe(List<RecipeIngredient> requiredIngredients, List<PantryItem> pantryItems) {
         if (requiredIngredients.isEmpty()) {
@@ -255,9 +301,9 @@ public final class IngredientMatcher {
         }
         for (RecipeIngredient required : requiredIngredients) {
             if (!pantryHasEnough(required, pantryItems)) {
-                return false;
+                return false; // one ingredient short is enough to rule the recipe out
             }
         }
-        return true;
+        return true; // every ingredient was covered
     }
 }

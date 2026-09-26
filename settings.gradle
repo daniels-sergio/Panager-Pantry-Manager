@@ -1,3 +1,4 @@
+// Where Gradle downloads its own build plugins from.
 pluginManagement {
     repositories {
         google()
@@ -5,6 +6,9 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+// Where Gradle downloads the libraries the app uses (Room, Material, etc.).
+// FAIL_ON_PROJECT_REPOS stops individual modules from adding other sources, so
+// every download comes from the two listed here.
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -13,5 +17,6 @@ dependencyResolutionManagement {
     }
 }
 
+// The project name, and the one module it contains (the app itself).
 rootProject.name = "Smart Pantry Manager"
 include ':app'

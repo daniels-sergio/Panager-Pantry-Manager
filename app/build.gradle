@@ -1,21 +1,30 @@
+// Build settings for the app itself.
+
+// Tells Gradle this module is an Android app (not a library).
 plugins {
     id 'com.android.application'
 }
 
 android {
+    // The package name used in the code, and the Android version the app is built against.
     namespace 'com.example.smartpantrymanager'
     compileSdk 34
 
     defaultConfig {
+        // The app's unique ID on a phone or in the Play Store.
         applicationId "com.example.smartpantrymanager"
+        // Oldest supported Android version: 24 is Android 7.0.
         minSdk 24
         targetSdk 34
+        // versionCode goes up with every release; versionName is what users see.
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        // Lets Room export its table schema to a folder so we can inspect/version it.
+        // Tells Room where to save a description of the database tables. This only
+        // does anything if exportSchema is true in AppDatabase, and it's currently
+        // false, so no schema files are written.
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
@@ -23,6 +32,7 @@ android {
         }
     }
 
+    // The release build doesn't shrink or scramble the code (minifyEnabled false).
     buildTypes {
         release {
             minifyEnabled false
@@ -30,11 +40,13 @@ android {
         }
     }
 
+    // The version of the Java language the code is written in.
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
 
+    // View binding is switched off; screens find their views with findViewById instead.
     buildFeatures {
         viewBinding false
     }
@@ -52,6 +64,8 @@ dependencies {
     implementation 'androidx.room:room-runtime:2.6.1'
     annotationProcessor 'androidx.room:room-compiler:2.6.1'
 
+    // Test libraries. JUnit runs IngredientMatcherTest on your computer; the two
+    // androidTest ones are for on-device tests (the project doesn't have any yet).
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'

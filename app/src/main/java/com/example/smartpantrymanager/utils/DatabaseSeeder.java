@@ -5,21 +5,31 @@ import com.example.smartpantrymanager.data.RecipeDao;
 import com.example.smartpantrymanager.data.RecipeIngredient;
 
 /**
- * Inserts a starter set of 20 recipes (with their ingredients) into the Room
- * database the first time the app runs. seedIfEmpty() checks the recipe count
- * first so recipes are never duplicated on later launches.
+ * Fills the recipe table with 20 starter recipes the first time the app runs:
+ * ten South African classics and ten Cape Malay dishes.
  *
- * This must be called from a background thread (see AppDatabase.databaseWriteExecutor)
- * because it performs real Room database writes.
+ * Each recipe is added with one call to addRecipe(). The three lists in each call
+ * line up by position: the first name goes with the first quantity and the first
+ * unit, the second with the second, and so on. For example, in Bobotie the first
+ * entries are "beef mince", 500 and "g", meaning 500 g of beef mince.
+ *
+ * This writes to the database, so it has to run in the background
+ * (PanagerApp takes care of that).
  */
 public final class DatabaseSeeder {
 
+    // Only holds helper methods, so nobody needs to create one.
     private DatabaseSeeder() {
     }
 
+    /**
+     * Adds the starter recipes, but only if the recipe table is empty.
+     * The app calls this on every launch, and the check at the top stops the
+     * recipes being added a second time.
+     */
     public static void seedIfEmpty(RecipeDao recipeDao) {
         if (recipeDao.getRecipeCount() > 0) {
-            return; // already seeded, do nothing
+            return; // recipes are already there, nothing to do
         }
 
         // ===== South African classics =====
@@ -167,9 +177,18 @@ public final class DatabaseSeeder {
                 new String[]{"g", "g", "l", "g", "tsp"});
     }
 
+    /**
+     * Saves one recipe, then saves each of its ingredients.
+     *
+     * The recipe goes in first because the database gives it an ID when it's
+     * saved, and every ingredient row needs that ID to point back to its recipe.
+     * The ID comes back as a long (a large whole number) and is shrunk to an int,
+     * which is plenty for 20 recipes.
+     */
     private static void addRecipe(RecipeDao recipeDao, String name, String description, String instructions,
                                    String[] ingredientNames, double[] quantities, String[] units) {
         long recipeId = recipeDao.insertRecipe(new Recipe(name, description, instructions));
+        // Walk through the three lists together, one position at a time.
         for (int i = 0; i < ingredientNames.length; i++) {
             recipeDao.insertRecipeIngredient(
                     new RecipeIngredient((int) recipeId, ingredientNames[i], quantities[i], units[i]));

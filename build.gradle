@@ -1,4 +1,6 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+// Settings shared by the whole project. This only declares which version of the
+// Android build tools to use; "apply false" means it's loaded here but actually
+// switched on inside app/build.gradle.
 plugins {
     id 'com.android.application' version '8.1.4' apply false
 }
